@@ -40,11 +40,19 @@ export default class VitalsWidgetPreferences extends ExtensionPreferences {
         });
         generalPage.add(layoutGroup);
 
+        // FIX: Manual binding for Layout Orientation ComboRow
         const orientationRow = new Adw.ComboRow({
             title: 'Layout Orientation',
             model: new Gtk.StringList({ strings: ['Horizontal', 'Vertical'] }),
         });
-        settings.bind('orientation', orientationRow, 'selected', Gio.SettingsBindFlags.DEFAULT);
+        
+        // Load initial state
+        orientationRow.selected = settings.get_string('orientation') === 'vertical' ? 1 : 0;
+        // Connect signal to save changes
+        orientationRow.connect('notify::selected', () => {
+            const value = orientationRow.selected === 1 ? 'vertical' : 'horizontal';
+            settings.set_string('orientation', value);
+        });
         layoutGroup.add(orientationRow);
 
         const showLabelsRow = new Adw.SwitchRow({
@@ -68,12 +76,21 @@ export default class VitalsWidgetPreferences extends ExtensionPreferences {
 
         this._addColorRow(layoutGroup, settings, 'background-color', 'Background Color');
         this._addColorRow(layoutGroup, settings, 'border-color', 'Border Color');
+
+        // FIX: Manual binding for Vital Content Orientation ComboRow
         const vitalOrientRow = new Adw.ComboRow({
             title: 'Vital Content Orientation',
             subtitle: 'Stacking of icon and label inside each vital',
             model: new Gtk.StringList({ strings: ['Horizontal', 'Vertical'] }),
         });
-        settings.bind('vital-orientation', vitalOrientRow, 'selected', Gio.SettingsBindFlags.DEFAULT);
+        
+        // Load initial state
+        vitalOrientRow.selected = settings.get_string('vital-orientation') === 'vertical' ? 1 : 0;
+        // Connect signal to save changes
+        vitalOrientRow.connect('notify::selected', () => {
+            const value = vitalOrientRow.selected === 1 ? 'vertical' : 'horizontal';
+            settings.set_string('vital-orientation', value);
+        });
         layoutGroup.add(vitalOrientRow);
 
         // Rings & Icons Group

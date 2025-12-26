@@ -9,24 +9,22 @@ import Gio from 'gi://Gio';
 import { VitalType } from './config.js';
 import { RingProgress } from './ring.js';
 
-// Define instance type
 type RingProgressInstance = InstanceType<typeof RingProgress>;
 
 export const VitalItem = GObject.registerClass(
 class VitalItem extends St.BoxLayout {
     private _type: VitalType;
     private _settings: any;
-    private _container!: St.Widget;
-    private _ringProgress!: RingProgressInstance;
-    private _icon?: St.Icon;
-    private _label?: St.Label;
+    private _ringProgress: RingProgressInstance | null = null;
+    private _icon: St.Icon | null = null;
+    private _label: St.Label | null = null;
+    private _handlerIds: number[] = [];
     private _currentValue: number = 0;
 
     constructor(type: VitalType, settings: any) {
         super({
             style_class: 'vital-item',
             vertical: true,
-            reactive: false,
             x_align: Clutter.ActorAlign.CENTER,
         });
 
@@ -39,23 +37,20 @@ class VitalItem extends St.BoxLayout {
     }
 
     private _buildUI(): void {
-        const isVertical = this._settings.get_string('vital-orientation') === 'vertical';
-        this.vertical = isVertical
-        this._container = new St.Widget({
+        this.vertical = this._settings.get_string('vital-orientation') === 'vertical';
+        const container = new St.Widget({
             layout_manager: new Clutter.BinLayout(),
-            x_align: Clutter.ActorAlign.CENTER,
-            y_align: Clutter.ActorAlign.CENTER,
         });
 
         this._ringProgress = new RingProgress(this._type, this._settings) as RingProgressInstance;
-        this._container.add_child(this._ringProgress);
+        container.add_child(this._ringProgress);
 
         if (this._settings.get_boolean('show-icons')) {
             this._icon = this._createIcon();
-            this._container.add_child(this._icon);
+            container.add_child(this._icon);
         }
 
-        this.add_child(this._container);
+        this.add_child(container);
 
         if (this._settings.get_boolean('show-labels')) {
             this._label = new St.Label({
@@ -68,81 +63,74 @@ class VitalItem extends St.BoxLayout {
     }
 
     private _createIcon(): St.Icon {
-        const iconPath = this._getIconPath();
-        const gicon = Gio.icon_new_for_string(iconPath);
+        const extension = this._settings.get_string('extension-path');
+        const iconMap: Record<string, string> = { cpu: 'cpu.svg', ram: 'ram.svg', storage: 'storage.svg', temp: 'temp.svg', gpu: 'gpu.svg' };
+        const gicon = Gio.icon_new_for_string(`${extension}/svg/${iconMap[this._type]}`);
         const diameter = this._settings.get_int('ring-diameter');
-        const iconSize = Math.round(diameter * 0.5);
         
         return new St.Icon({
             gicon,
             style_class: 'vital-icon',
-            icon_size: iconSize,
+            icon_size: Math.round(diameter * 0.5),
             x_align: Clutter.ActorAlign.CENTER,
             y_align: Clutter.ActorAlign.CENTER,
-            x_expand: true,
-            y_expand: true,
+            x_expand: true, y_expand: true,
         });
     }
 
-    private _getIconPath(): string {
-        const extension = this._settings.get_string('extension-path');
-        const iconMap: Record<VitalType, string> = {
-            [VitalType.CPU]: 'cpu.svg',
-            [VitalType.RAM]: 'ram.svg',
-            [VitalType.STORAGE]: 'storage.svg',
-            [VitalType.TEMP]: 'temp.svg',
-            [VitalType.GPU]: 'gpu.svg',
-        };
-        return `${extension}/svg/${iconMap[this._type]}`;
-    }
-
     private _connectSettings(): void {
-        this._settings.connect('changed::show-icons', () => this._rebuildUI());
-        this._settings.connect('changed::show-labels', () => this._rebuildUI());
-        this._settings.connect(`changed::${this._type}-color`, () => this._updateStyle());
-        this._settings.connect('changed::icon-color', () => this._updateStyle());
-        this._settings.connect('changed::ring-diameter', () => this._rebuildUI());
-        this._settings.connect('changed::vital-orientation', () => this._rebuildUI());
-        this._settings.connect('changed::inactive-ring-color', () => this._updateStyle());
-        this._settings.connect('changed::show-labels', () => this._rebuildUI());
-        this._settings.connect('changed::label-font-size', () => this._updateStyle());
+        const keys = [
+            'show-icons', 'show-labels', 'ring-diameter', 'vital-orientation'
+        ];
+        keys.forEach(key => {
+            this._handlerIds.push(this._settings.connect(`changed::${key}`, () => this._rebuildUI()));
+        });
+
+        const styleKeys = [`${this._type}-color`, 'icon-color', 'inactive-ring-color', 'label-font-size'];
+        styleKeys.forEach(key => {
+            this._handlerIds.push(this._settings.connect(`changed::${key}`, () => this._updateStyle()));
+        });
     }
 
     private _updateStyle(): void {
+        if (!this._label || !this._ringProgress) return;
+        
         const vitalColor = this._settings.get_string(`${this._type}-color`);
-        const iconColor = this._settings.get_string('icon-color');
-        const fontSize = this._settings.get_int('label-font-size'); // Fetch new setting
-
-        if (this._icon) {
-            this._icon.set_style(`color: ${iconColor};`);
-        }
-
+        if (this._icon) this._icon.set_style(`color: ${this._settings.get_string('icon-color')};`);
         if (this._label) {
-            this._label.set_style(`
-                color: ${vitalColor};
-                font-size: ${fontSize}px;
-                font-weight: 500;
-                margin-top: 4px;
-            `);
+            this._label.set_style(`color: ${vitalColor}; font-size: ${this._settings.get_int('label-font-size')}px;`);
         }
     }
 
     private _rebuildUI(): void {
+        if (!this.get_parent()) return;
         this.destroy_all_children();
         this._buildUI();
         this.update(this._currentValue);
     }
 
     update(value: number): void {
-        this._currentValue = Math.min(100, Math.max(0, value));
-        this._ringProgress.setValue(this._currentValue);
-        if (this._label) {
-            this._label.text = `${Math.round(this._currentValue)}%`;
+        // ULTIMATE GUARD: check if C-objects are still alive
+        if (!this._label || !this._ringProgress || !this.get_parent()) return;
+
+        try {
+            this._currentValue = Math.min(100, Math.max(0, value));
+            this._ringProgress.setValue(this._currentValue);
+            this._label.set_text(`${Math.round(this._currentValue)}%`);
+        } catch (e) {
+            // Silently fail if object was disposed between the check and the call
         }
     }
 
     destroy(): void {
-        this._ringProgress?.destroy();
+        this._handlerIds.forEach(id => this._settings.disconnect(id));
+        this._handlerIds = [];
+        
+        if (this._ringProgress) this._ringProgress.destroy();
+        this._ringProgress = null;
+        this._label = null;
+        this._icon = null;
+        
         super.destroy();
     }
 });

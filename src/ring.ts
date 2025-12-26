@@ -1,7 +1,6 @@
 /**
  * CircularProgress - Circular progress ring indicator
- * 
- * Draws a circular progress ring using Cairo
+ * * Draws a circular progress ring using Cairo
  */
 
 import St from 'gi://St';
@@ -14,6 +13,7 @@ class RingProgress extends St.DrawingArea {
     private _type: VitalType;
     private _settings: any;
     private _value: number = 0;
+    private _handlerIds: number[] = [];
 
     constructor(type: VitalType, settings: any) {
         super({
@@ -31,6 +31,9 @@ class RingProgress extends St.DrawingArea {
      * Update canvas dimensions based on diameter setting
      */
     private _updateSize(): void {
+        // Guard against null settings during destruction or init
+        if (!this._settings) return;
+
         const diameter = this._settings.get_int('ring-diameter');
         this.set_width(diameter);
         this.set_height(diameter);
@@ -40,17 +43,23 @@ class RingProgress extends St.DrawingArea {
      * Connect to settings changes
      */
     private _connectSettings(): void {
-        this._settings.connect(`changed::${this._type}-color`, () => {
-            this.queue_repaint();
-        });
+        if (!this._settings) return;
 
-        this._settings.connect('changed::ring-diameter', () => {
-            this._updateSize();
-            this.queue_repaint();
-        });
+        const signals = [
+            `changed::${this._type}-color`,
+            'changed::ring-diameter',
+            'changed::ring-width'
+        ];
 
-        this._settings.connect('changed::ring-width', () => {
-            this.queue_repaint();
+        signals.forEach(signal => {
+            const id = this._settings.connect(signal, () => {
+                // Only queue repaint if settings still exist and widget is visible
+                if (this._settings && this.get_parent()) {
+                    if (signal.includes('diameter')) this._updateSize();
+                    this.queue_repaint();
+                }
+            });
+            this._handlerIds.push(id);
         });
     }
 
@@ -59,13 +68,21 @@ class RingProgress extends St.DrawingArea {
      */
     setValue(value: number): void {
         this._value = Math.min(100, Math.max(0, value));
-        this.queue_repaint();
+        // Only repaint if the widget is currently in the UI tree
+        if (this._settings && this.get_parent()) {
+            this.queue_repaint();
+        }
     }
 
     /**
      * Draw the circular progress ring
      */
     vfunc_repaint(): void {
+        // FIX: Core safety check to prevent "this._settings is undefined"
+        if (!this._settings || !this.get_parent()) {
+            return;
+        }
+
         const cr = this.get_context();
         const [width, height] = this.get_surface_size();
         
@@ -73,58 +90,61 @@ class RingProgress extends St.DrawingArea {
             return;
         }
 
-        const diameter = this._settings.get_int('ring-diameter');
-        const ringWidth = this._settings.get_int('ring-width');
-        const color = this._parseColor(this._settings.get_string(`${this._type}-color`));
-        const inactiveColor = this._parseColor(this._settings.get_string('inactive-ring-color'));
+        try {
+            const diameter = this._settings.get_int('ring-diameter');
+            const ringWidth = this._settings.get_int('ring-width');
+            const color = this._parseColor(this._settings.get_string(`${this._type}-color`));
+            const inactiveColor = this._parseColor(this._settings.get_string('inactive-ring-color'));
 
-        const centerX = width / 2;
-        const centerY = height / 2;
-        const radius = (diameter / 2) - (ringWidth / 2) - 2; // Account for ring width and padding
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const radius = Math.max(0, (diameter / 2) - (ringWidth / 2) - 2);
 
-        // Draw background circle (empty state)
-        cr.setLineWidth(ringWidth);
-        cr.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-        cr.setSourceRGBA(inactiveColor.r, inactiveColor.g, inactiveColor.b, inactiveColor.a);
-        cr.stroke();
-
-        // Draw progress arc
-        if (this._value > 0) {
-            const startAngle = -Math.PI / 2; // Start at top (12 o'clock)
-            const endAngle = startAngle + (2 * Math.PI * this._value) / 100;
-
+            // Draw background circle (empty state)
             cr.setLineWidth(ringWidth);
-            cr.setLineCap(Cairo.LineCap.ROUND); // Rounded ends
-            cr.arc(centerX, centerY, radius, startAngle, endAngle);
-            cr.setSourceRGBA(color.r, color.g, color.b, color.a);
+            cr.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+            cr.setSourceRGBA(inactiveColor.r, inactiveColor.g, inactiveColor.b, inactiveColor.a);
             cr.stroke();
-        }
 
-        cr.$dispose();
+            // Draw progress arc
+            if (this._value > 0) {
+                const startAngle = -Math.PI / 2; // Start at top (12 o'clock)
+                const endAngle = startAngle + (2 * Math.PI * this._value) / 100;
+
+                cr.setLineWidth(ringWidth);
+                cr.setLineCap(Cairo.LineCap.ROUND); 
+                cr.arc(centerX, centerY, radius, startAngle, endAngle);
+                cr.setSourceRGBA(color.r, color.g, color.b, color.a);
+                cr.stroke();
+            }
+        } catch (e) {
+            logError(e as Object, 'VitalsWidget: Error in RingProgress repaint');
+        } finally {
+            // Do not call $dispose() as it is deprecated in modern GJS
+            // The context is managed by the DrawingArea lifecycle
+        }
     }
 
     /**
      * Parse color string to RGBA
      */
     private _parseColor(colorStr: string): { r: number; g: number; b: number; a: number } {
-        // Default blue
         let r = 0.2, g = 0.6, b = 1.0, a = 1.0;
 
-        // Parse hex colors (#RRGGBB or #RGB)
+        if (!colorStr) return { r, g, b, a };
+
         if (colorStr.startsWith('#')) {
             const hex = colorStr.slice(1);
             if (hex.length === 6) {
-                r = parseInt(hex.substr(0, 2), 16) / 255;
-                g = parseInt(hex.substr(2, 2), 16) / 255;
-                b = parseInt(hex.substr(4, 2), 16) / 255;
+                r = parseInt(hex.substring(0, 2), 16) / 255;
+                g = parseInt(hex.substring(2, 4), 16) / 255;
+                b = parseInt(hex.substring(4, 6), 16) / 255;
             } else if (hex.length === 3) {
                 r = parseInt(hex[0] + hex[0], 16) / 255;
                 g = parseInt(hex[1] + hex[1], 16) / 255;
                 b = parseInt(hex[2] + hex[2], 16) / 255;
             }
-        }
-        // Parse rgba(r, g, b, a)
-        else if (colorStr.startsWith('rgba') || colorStr.startsWith('rgb')) {
+        } else if (colorStr.startsWith('rgb')) {
             const match = colorStr.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
             if (match) {
                 r = parseInt(match[1]) / 255;
@@ -141,6 +161,12 @@ class RingProgress extends St.DrawingArea {
      * Cleanup
      */
     destroy(): void {
+        // Disconnect all signals to prevent callbacks firing after destruction
+        if (this._settings) {
+            this._handlerIds.forEach(id => this._settings.disconnect(id));
+            this._handlerIds = [];
+        }
+        this._settings = null;
         super.destroy();
     }
 });
