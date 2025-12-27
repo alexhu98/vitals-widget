@@ -175,12 +175,12 @@ export default class VitalsWidgetExtension extends Extension {
         const settings = this.getSettings();
         settings.set_string('extension-path', this.path);
         this._widget = new VitalsWidget(settings);
-        Main.layoutManager.addChrome(this._widget);
+        Main.layoutManager._backgroundGroup.add_child(this._widget);
     }
 
     disable(): void {
         if (this._widget) {
-            Main.layoutManager.removeChrome(this._widget);
+            Main.layoutManager._backgroundGroup.remove_child(this._widget);
             this._widget.destroy();
             this._widget = null;
         }

@@ -1,8 +1,3 @@
-/**
- * CircularProgress - Circular progress ring indicator
- * * Draws a circular progress ring using Cairo
- */
-
 import St from 'gi://St';
 import GObject from 'gi://GObject';
 import Cairo from 'gi://cairo';
@@ -14,6 +9,7 @@ class RingProgress extends St.DrawingArea {
     private _settings: any;
     private _value: number = 0;
     private _handlerIds: number[] = [];
+    private _isDestroyed: boolean = false; // NEW: Track destruction state
 
     constructor(type: VitalType, settings: any) {
         super({
@@ -31,8 +27,8 @@ class RingProgress extends St.DrawingArea {
      * Update canvas dimensions based on diameter setting
      */
     private _updateSize(): void {
-        // Guard against null settings during destruction or init
-        if (!this._settings) return;
+        // Guard against destroyed state
+        if (this._isDestroyed || !this._settings) return;
 
         const diameter = this._settings.get_int('ring-diameter');
         this.set_width(diameter);
@@ -43,7 +39,7 @@ class RingProgress extends St.DrawingArea {
      * Connect to settings changes
      */
     private _connectSettings(): void {
-        if (!this._settings) return;
+        if (this._isDestroyed || !this._settings) return;
 
         const signals = [
             `changed::${this._type}-color`,
@@ -53,8 +49,8 @@ class RingProgress extends St.DrawingArea {
 
         signals.forEach(signal => {
             const id = this._settings.connect(signal, () => {
-                // Only queue repaint if settings still exist and widget is visible
-                if (this._settings && this.get_parent()) {
+                // Only queue repaint if not destroyed and still in UI tree
+                if (!this._isDestroyed && this._settings && this.get_parent()) {
                     if (signal.includes('diameter')) this._updateSize();
                     this.queue_repaint();
                 }
@@ -67,7 +63,11 @@ class RingProgress extends St.DrawingArea {
      * Set progress value (0-100)
      */
     setValue(value: number): void {
+        // FIX: Check destruction state FIRST before any other operations
+        if (this._isDestroyed) return;
+        
         this._value = Math.min(100, Math.max(0, value));
+        
         // Only repaint if the widget is currently in the UI tree
         if (this._settings && this.get_parent()) {
             this.queue_repaint();
@@ -78,8 +78,8 @@ class RingProgress extends St.DrawingArea {
      * Draw the circular progress ring
      */
     vfunc_repaint(): void {
-        // FIX: Core safety check to prevent "this._settings is undefined"
-        if (!this._settings || !this.get_parent()) {
+        // FIX: Core safety check including destruction state
+        if (this._isDestroyed || !this._settings || !this.get_parent()) {
             return;
         }
 
@@ -118,10 +118,9 @@ class RingProgress extends St.DrawingArea {
                 cr.stroke();
             }
         } catch (e) {
-            logError(e as Object, 'VitalsWidget: Error in RingProgress repaint');
-        } finally {
-            // Do not call $dispose() as it is deprecated in modern GJS
-            // The context is managed by the DrawingArea lifecycle
+            if (!this._isDestroyed) {
+                logError(e as Object, 'VitalsWidget: Error in RingProgress repaint');
+            }
         }
     }
 
@@ -161,6 +160,9 @@ class RingProgress extends St.DrawingArea {
      * Cleanup
      */
     destroy(): void {
+        // FIX: Set destroyed flag FIRST to prevent any callbacks from running
+        this._isDestroyed = true;
+        
         // Disconnect all signals to prevent callbacks firing after destruction
         if (this._settings) {
             this._handlerIds.forEach(id => this._settings.disconnect(id));
