@@ -1,8 +1,4 @@
-// icons.ts
-
-/**
- * Helper to wrap path data in a standard 16x16 SVG container
- */
+//Helper to wrap path data in a standard 16x16 SVG container
 const wrap = (content: string) => `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16">
     ${content}

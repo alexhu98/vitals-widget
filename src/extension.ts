@@ -24,7 +24,7 @@ class VitalsWidget extends St.BoxLayout {
     private _sensors: Map<VitalType, any>;
     private _settings: any;
     private _intervals: Map<VitalType, number> = new Map();
-    private _handlerIds: number[] = []; // Track all signal handlers
+    private _handlerIds: number[] = [];
 
     constructor(settings: any) {
         super({
@@ -48,6 +48,7 @@ class VitalsWidget extends St.BoxLayout {
         this._updateContainerStyle();
     }
 
+    
     private _initializeSensors(): void {
         this._sensors.set(VitalType.CPU, new CPUSensor());
         this._sensors.set(VitalType.RAM, new RAMSensor());
@@ -136,7 +137,7 @@ class VitalsWidget extends St.BoxLayout {
             const vital = this._vitals.get(type);
             const sensor = this._sensors.get(type);
             
-            // LIVENESS CHECK: If the widget is being destroyed, _vitals will be cleared
+            
             if (this._vitals.size > 0 && vital && vital.visible && sensor) {
                 vital.update(sensor.getValue());
                 return GLib.SOURCE_CONTINUE;
@@ -162,7 +163,7 @@ class VitalsWidget extends St.BoxLayout {
         // 3. Destroy children
         this._sensors.forEach(sensor => sensor.destroy?.());
         this._vitals.forEach(vital => vital.destroy());
-        this._vitals.clear(); // This triggers the safety check in the timers
+        this._vitals.clear();
 
         super.destroy();
     }

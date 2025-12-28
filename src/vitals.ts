@@ -18,7 +18,7 @@ class VitalItem extends St.BoxLayout {
     private _label: St.Label | null = null;
     private _handlerIds: number[] = [];
     private _currentValue: number = 0;
-    private _isDestroyed: boolean = false; // NEW: Track destruction state
+    private _isDestroyed: boolean = false;
 
     constructor(type: VitalType, settings: any) {
         super({
@@ -36,7 +36,6 @@ class VitalItem extends St.BoxLayout {
     }
 
     private _getGIcon(color: string): Gio.Icon {
-        // Look up the SVG function by type (e.g., 'cpu', 'temp')
         const svgFunc = ICONS[this._type as keyof typeof ICONS];
         const svgString = svgFunc ? svgFunc(color) : '';
         
@@ -126,14 +125,13 @@ class VitalItem extends St.BoxLayout {
         }
 
         if (this._label) {
-            this._label.set_style(`color: ${vitalColor}; font-size: ${this._settings.get_int('label-font-size')}px;`);
+            this._label.set_style(`color: ${iconColor}; font-size: ${this._settings.get_int('label-font-size')}px;`);
         }
     }
 
     private _rebuildUI(): void {
         if (this._isDestroyed || !this.get_parent()) return;
         
-        // FIX: Destroy old ring progress explicitly before clearing children
         if (this._ringProgress) {
             this._ringProgress.destroy();
         }
@@ -154,26 +152,19 @@ class VitalItem extends St.BoxLayout {
     }
 
     update(value: number): void {
-        // FIX: Add destruction state check as first guard
         if (this._isDestroyed) return;
         
-        // Strict safety check:
-        // 1. Not destroyed
-        // 2. RingProgress must exist
-        // 3. Widget must be attached to the UI tree
         if (!this._ringProgress || !this.get_parent()) return;
 
         try {
             this._currentValue = Math.min(100, Math.max(0, value));
             
-            // Safe to call methods now - ringProgress will check its own destruction state
             this._ringProgress.setValue(this._currentValue);
             
             if (this._label) {
                 this._label.set_text(`${Math.round(this._currentValue)}%`);
             }
         } catch (e) {
-            // If an object is disposed mid-function, catch it to prevent log spam
             if (!this._isDestroyed) {
                 console.debug(`[VitalsWidget] Update suppressed: ${e}`);
             }
@@ -181,7 +172,6 @@ class VitalItem extends St.BoxLayout {
     }
 
     destroy(): void {
-        // FIX: Set destroyed flag FIRST to prevent callbacks from running
         this._isDestroyed = true;
         
         this._handlerIds.forEach(id => this._settings.disconnect(id));

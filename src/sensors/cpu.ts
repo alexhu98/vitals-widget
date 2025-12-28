@@ -1,8 +1,4 @@
-/**
- * CPUSensor - CPU utilization monitoring
- * 
- * Reads /proc/stat to calculate CPU usage percentage
- */
+// CPUSensor - CPU utilization monitoring
 
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
@@ -16,16 +12,12 @@ export class CPUSensor {
         this._updateStats();
     }
 
-    /**
-     * Get current CPU utilization (0-100)
-     */
+    //  Get current CPU utilization (0-100)
     getValue(): number {
         return this._updateStats();
     }
 
-    /**
-     * Read and calculate CPU usage from /proc/stat
-     */
+    // Read and calculate CPU usage from /proc/stat
     private _updateStats(): number {
         try {
             const file = Gio.File.new_for_path('/proc/stat');
@@ -78,10 +70,8 @@ export class CPUSensor {
             return 0;
         }
     }
-
-    /**
-     * Cleanup
-     */
+    
+    //Cleanup
     destroy(): void {
         // No cleanup needed
     }

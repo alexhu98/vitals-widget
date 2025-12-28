@@ -10,9 +10,7 @@ import { ExtensionPreferences } from 'resource:///org/gnome/Shell/Extensions/js/
 import { VitalType, getVitalDisplayName } from './config.js';
 
 export default class VitalsWidgetPreferences extends ExtensionPreferences {
-    /**
-     * Fill preferences window with settings
-     */
+    //Fill preferences window with settings
     async fillPreferencesWindow(window: Adw.PreferencesWindow): Promise<void> {
         const settings = this.getSettings();
 
@@ -117,9 +115,7 @@ export default class VitalsWidgetPreferences extends ExtensionPreferences {
         });
     }
 
-    /**
-     * Helper to create a setting group for a specific vital type
-     */
+    //Helper to create a setting group for a specific vital type
     private _createVitalGroup(page: Adw.PreferencesPage, settings: Gio.Settings, type: VitalType): void {
         const group = new Adw.PreferencesGroup({ title: getVitalDisplayName(type) });
         page.add(group);
@@ -136,9 +132,7 @@ export default class VitalsWidgetPreferences extends ExtensionPreferences {
         this._addSpinRow(group, settings, `${type}-update-interval`, 'Update Interval (ms)', 500, 300000, 500);
     }
 
-    /**
-     * Helper to add a SpinRow for numeric settings
-     */
+    //Helper to add a SpinRow for numeric settings
     private _addSpinRow(group: Adw.PreferencesGroup, settings: Gio.Settings, key: string, title: string, lower: number, upper: number, step = 1): void {
         const row = new Adw.SpinRow({
             title,
@@ -148,9 +142,7 @@ export default class VitalsWidgetPreferences extends ExtensionPreferences {
         group.add(row);
     }
 
-    /**
-     * Helper to add a color picker row
-     */
+    //Helper to add a color picker row
     private _addColorRow(group: Adw.PreferencesGroup, settings: Gio.Settings, key: string, title: string): void {
         const row = new Adw.ActionRow({ title });
         const colorButton = new Gtk.ColorButton();

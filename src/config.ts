@@ -71,9 +71,7 @@ export const DEFAULT_CONFIG = {
     gpuUpdateInterval: 2000,
 };
 
-/**
- * Configuration interface
- */
+//Configuration interface
 export interface VitalsConfig {
     positionX: number;
     positionY: number;
@@ -104,9 +102,7 @@ export interface VitalsConfig {
     gpuUpdateInterval: number;
 }
 
-/**
- * Helper to get vital display name
- */
+//Helper to get vital display name
 export function getVitalDisplayName(type: VitalType): string {
     const names: Record<VitalType, string> = {
         [VitalType.CPU]: 'CPU',
@@ -118,9 +114,7 @@ export function getVitalDisplayName(type: VitalType): string {
     return names[type];
 }
 
-/**
- * Helper to get default color for vital type
- */
+//Helper to get default color for vital type
 export function getDefaultColor(type: VitalType): string {
     return DEFAULT_CONFIG[`${type}Color` as keyof typeof DEFAULT_CONFIG] as string;
 }

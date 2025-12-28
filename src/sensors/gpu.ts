@@ -14,13 +14,7 @@ export class GPUSensor {
         this._detectGPU();
     }
 
-    /**
-     * Detect available GPU type.
-     * Priority:
-     * 1. NVIDIA (nvidia-smi)
-     * 2. AMD Sysfs (native kernel file, no root needed)
-     * 3. AMD Radeontop (fallback, often needs root)
-     */
+    // Detect available GPU type.
     private _detectGPU(): void {
         console.log('VitalsWidget: Starting GPU detection...');
         
@@ -60,9 +54,7 @@ export class GPUSensor {
         this._gpuType = 'none';
     }
 
-    /**
-     * Get current GPU utilization (0-100)
-     */
+    // Get current GPU utilization (0-100)
     getValue(): number {
         if (this._disabled) return 0;
         if (this._gpuType === 'none') return 0;

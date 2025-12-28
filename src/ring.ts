@@ -9,7 +9,7 @@ class RingProgress extends St.DrawingArea {
     private _settings: any;
     private _value: number = 0;
     private _handlerIds: number[] = [];
-    private _isDestroyed: boolean = false; // NEW: Track destruction state
+    private _isDestroyed: boolean = false;
 
     constructor(type: VitalType, settings: any) {
         super({
@@ -23,9 +23,7 @@ class RingProgress extends St.DrawingArea {
         this._connectSettings();
     }
 
-    /**
-     * Update canvas dimensions based on diameter setting
-     */
+    //Update canvas dimensions based on diameter setting
     private _updateSize(): void {
         // Guard against destroyed state
         if (this._isDestroyed || !this._settings) return;
@@ -35,9 +33,7 @@ class RingProgress extends St.DrawingArea {
         this.set_height(diameter);
     }
 
-    /**
-     * Connect to settings changes
-     */
+    //Connect to settings changes
     private _connectSettings(): void {
         if (this._isDestroyed || !this._settings) return;
 
@@ -59,9 +55,7 @@ class RingProgress extends St.DrawingArea {
         });
     }
 
-    /**
-     * Set progress value (0-100)
-     */
+    //Set progress value (0-100)
     setValue(value: number): void {
         // FIX: Check destruction state FIRST before any other operations
         if (this._isDestroyed) return;
@@ -74,9 +68,7 @@ class RingProgress extends St.DrawingArea {
         }
     }
 
-    /**
-     * Draw the circular progress ring
-     */
+    //Draw the circular progress ring
     vfunc_repaint(): void {
         // FIX: Core safety check including destruction state
         if (this._isDestroyed || !this._settings || !this.get_parent()) {
@@ -124,9 +116,7 @@ class RingProgress extends St.DrawingArea {
         }
     }
 
-    /**
-     * Parse color string to RGBA
-     */
+    //Parse color string to RGBA
     private _parseColor(colorStr: string): { r: number; g: number; b: number; a: number } {
         let r = 0.2, g = 0.6, b = 1.0, a = 1.0;
 
@@ -156,11 +146,8 @@ class RingProgress extends St.DrawingArea {
         return { r, g, b, a };
     }
 
-    /**
-     * Cleanup
-     */
+    //Cleanup
     destroy(): void {
-        // FIX: Set destroyed flag FIRST to prevent any callbacks from running
         this._isDestroyed = true;
         
         // Disconnect all signals to prevent callbacks firing after destruction

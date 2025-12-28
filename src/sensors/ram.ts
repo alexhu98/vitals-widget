@@ -1,17 +1,11 @@
-/**
- * RAMSensor - Memory utilization monitoring
- * 
- * Reads /proc/meminfo to calculate RAM usage percentage
- */
+// RAMSensor - Memory utilization monitoring
 
 import Gio from 'gi://Gio';
 
 export class RAMSensor {
     constructor() {}
 
-    /**
-     * Get current RAM utilization (0-100)
-     */
+    // Get current RAM utilization (0-100)
     getValue(): number {
         try {
             const file = Gio.File.new_for_path('/proc/meminfo');
@@ -56,17 +50,13 @@ export class RAMSensor {
         }
     }
 
-    /**
-     * Parse memory value from line (in kB)
-     */
+    // Parse memory value from line (in kB)
     private _parseMemValue(line: string): number {
         const match = line.match(/:\s*(\d+)/);
         return match ? parseInt(match[1]) : 0;
     }
 
-    /**
-     * Cleanup
-     */
+    // Cleanup
     destroy(): void {
         // No cleanup needed
     }

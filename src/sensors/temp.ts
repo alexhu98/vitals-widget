@@ -1,8 +1,4 @@
-/**
- * TempSensor - CPU temperature monitoring
- * * Reads from thermal zones to get CPU temperature
- * Maps temperature to 0-100 scale (30°C-90°C range)
- */
+//TempSensor - CPU temperature monitoring
 
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
@@ -16,9 +12,7 @@ export class TempSensor {
         this._findThermalZones();
     }
 
-    /**
-     * Find available thermal zones
-     */
+    // Find available thermal zones
     private _findThermalZones(): void {
         const basePath = '/sys/class/thermal';
         this._thermalPaths = [];
@@ -98,10 +92,8 @@ export class TempSensor {
         console.log(`TempSensor: Found ${this._thermalPaths.length} thermal zones: ${this._thermalPaths.join(', ')}`);
     }
 
-    /**
-     * Get current temperature as percentage (0-100)
-     * Calculates the AVERAGE temperature of all detected sensors.
-     */
+    //Get current temperature as percentage (0-100)
+    // Calculates the AVERAGE temperature of all detected sensors.
     getValue(): number {
         let totalTemp = 0;
         let count = 0;
@@ -122,7 +114,7 @@ export class TempSensor {
                 if (!isNaN(tempMillidegrees)) {
                     const tempCelsius = tempMillidegrees / 1000;
                     
-                    // Sanity check: Discard implausible values (often 0, -273, or 1000+)
+                    // Sanity check: Discard implausible values (0, -273, or 1000+)
                     // A running CPU should generally be between 5°C and 150°C
                     if (tempCelsius > 5 && tempCelsius < 150) {
                         totalTemp += tempCelsius;
@@ -146,9 +138,7 @@ export class TempSensor {
         return Math.max(0, Math.min(100, percentage));
     }
 
-    /**
-     * Cleanup
-     */
+    //Cleanup
     destroy(): void {
         // No cleanup needed
     }

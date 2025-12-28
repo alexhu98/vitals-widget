@@ -1,8 +1,5 @@
-/**
- * StorageSensor - Disk usage monitoring
- * 
- * Uses df command to get root filesystem usage
- */
+// StorageSensor - Disk usage monitoring
+ 
 
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
@@ -10,10 +7,8 @@ import Gio from 'gi://Gio';
 export class StorageSensor {
     constructor() {}
 
-    /**
-     * Get current storage utilization (0-100)
-     */
-    getValue(): number {
+    //Get current storage utilization (0-100
+     getValue(): number {
         try {
             // Execute df command for root filesystem
             const [success, stdout] = GLib.spawn_command_line_sync('df -h /');
@@ -50,9 +45,7 @@ export class StorageSensor {
         }
     }
 
-    /**
-     * Cleanup
-     */
+    //Cleanup
     destroy(): void {
         // No cleanup needed
     }
