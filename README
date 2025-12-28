@@ -132,7 +132,7 @@ make test FILE=tests/sensor_test.js
 
 Access settings via:
 - GNOME Extensions app → VitalsWidget → Settings
-- Command line: `gnome-extensions prefs vitalswidget@ctrln3rd.vercel.app`
+- Command line: `gnome-extensions prefs vitalswidget@ctrln3rd.github.com`
 
 ### Available Settings
 
