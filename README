@@ -1,11 +1,13 @@
 # VitalsWidget - GNOME Shell Desktop Widget
 
+![App Screenshot](./assets/preview.png)
+
 A beautiful, modern desktop widget for GNOME Shell that displays system vitals (CPU, RAM, Storage, Temperature, and GPU) as elegant circular progress indicators that float on your desktop.
 
 ## Features
 
 - **Real-time Monitoring**: Track CPU, RAM, Storage, Temperature, and GPU usage
-- **Circular Design**: Beautiful circular progress rings with icons inside, inspired by modern UI design
+- **Ring Design**: Beautiful circular progress rings with icons inside, inspired by modern UI design
 - **Desktop Widget**: Floats on your desktop, not in the panel - position anywhere you want
 - **Customizable Appearance**: 
   - Adjust colors for each vital's progress ring
@@ -58,33 +60,6 @@ gnome-extensions enable vitalswidget@ctrln3rd.github.com
 - X11: Press `Alt+F2`, type `r`, press Enter
 - Wayland: Log out and log back in
 
-## Development
-
-### Project Structure
-
-```
-vitals-widget/
-├── src/
-│   ├── extension.ts       # Main extension entry point
-│   ├── vitals.ts          # Individual vital components
-│   ├── config.ts          # Configuration types
-│   ├── progress.ts        # Progress bar component
-│   ├── prefs.ts           # Preferences UI
-│   ├── icons.ts           # Icons Svgs 
-│   └── sensors/
-│       ├── cpu.ts         # CPU sensor
-│       ├── ram.ts         # RAM sensor
-│       ├── storage.ts     # Storage sensor
-│       ├── temp.ts        # Temperature sensor
-│       └── gpu.ts         # GPU sensor
-| 
-├── schemas/               # GSettings schema
-├── metadata.json          # Extension metadata
-├── stylesheet.css         # Styles
-├── tsconfig.json          # TypeScript config
-├── package.json           # Node dependencies
-└── Makefile              # Build automation
-```
 
 ### Available Make Commands
 
@@ -134,42 +109,9 @@ Access settings via:
 - GNOME Extensions app → VitalsWidget → Settings
 - Command line: `gnome-extensions prefs vitalswidget@ctrln3rd.github.com`
 
-### Available Settings
 
-**General**
-- Horizontal position (0-100%)
-- Vertical position (0-100%)
-- Background color
-- Border color and radius
-- Vital spacing
-
-**Display Options**
-- Show/hide icons (inside circles)
-- Show/hide labels (below circles)
-- Icon color
-
-**Circle Settings**
-- Circle diameter (40-120px)
-- Ring width (2-12px)
-
-**Vitals**
-- Enable/disable each vital (CPU, RAM, Storage, Temp, GPU)
-- Custom ring color per vital
-
-## Creating SVG Icons
-
-Place SVG icons in the `svg/` directory. Icons should:
-- Be 16x16px or scalable
-- Use simple paths for clarity
-- Use `currentColor` for fill/stroke (colors are set dynamically)
-- Be centered for proper display inside circles
-
-Example structure:
-```xml
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
-  <path d="M..." fill="currentColor"/>
-</svg>
-```
+### Custom Icons 
+- In the ./src/icons.ts change the desired svg with currentColor to allow color changing
 
 ## Troubleshooting
 

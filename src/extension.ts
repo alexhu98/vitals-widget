@@ -173,8 +173,18 @@ export default class VitalsWidgetExtension extends Extension {
     private _widget: InstanceType<typeof VitalsWidget> | null = null;
 
     enable(): void {
+        if (!Main.layoutManager._startingUp) {
+            this._enable();
+        } else {
+            Main.layoutManager.connectObject(
+                'startup-complete', 
+                () => this._enable(), 
+                this
+            );
+        }
+    }
+    private _enable(): void {
         const settings = this.getSettings();
-        settings.set_string('extension-path', this.path);
         this._widget = new VitalsWidget(settings);
         Main.layoutManager._backgroundGroup.add_child(this._widget);
     }
