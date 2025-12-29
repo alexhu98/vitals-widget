@@ -1,187 +1,56 @@
-# VitalsWidget - GNOME Shell Desktop Widget
+# 📊 VitalsWidget
 
-![App Screenshot](./assets/preview.png)
+<p align="center">
+  <img src="./assets/preview.png" alt="VitalsWidget Preview" width="600">
+  <br>
+  <b>A beautiful, modern desktop widget for GNOME Shell.</b>
+  <br>
+  <i>Monitor system vitals with elegant, floating circular indicators.</i>
+</p>
 
-A beautiful, modern desktop widget for GNOME Shell that displays system vitals (CPU, RAM, Storage, Temperature, and GPU) as elegant circular progress indicators that float on your desktop.
+<p align="center">
+  <img src="https://img.shields.io/badge/GNOME-45%20--%2049-blue?logo=gnome&logoColor=white" alt="GNOME Version">
+  <img src="https://img.shields.io/badge/License-GPL--3.0-green.svg" alt="License">
+  <img src="https://img.shields.io/badge/TypeScript-5.3%2B-blue?logo=typescript&logoColor=white" alt="TypeScript">
+</p>
 
-## Features
+---
 
-- **Real-time Monitoring**: Track CPU, RAM, Storage, Temperature, and GPU usage
-- **Ring Design**: Beautiful circular progress rings with icons inside, inspired by modern UI design
-- **Desktop Widget**: Floats on your desktop, not in the panel - position anywhere you want
-- **Customizable Appearance**: 
-  - Adjust colors for each vital's progress ring
-  - Change background, border colors and radius
-  - Configure icon and label visibility
-  - Set custom spacing between vitals
-  - Adjustable circle diameter and ring width
-- **Flexible Positioning**:
-  - Position widget anywhere on screen using X% and Y% coordinates
-  - Drag widget to new position (automatically saves)
-  - Settings for precise percentage-based positioning
-- **Clean Modern UI**: SVG icons centered inside circular progress rings
+## ✨ Features
 
-## Requirements
+VitalsWidget moves system monitoring from the top panel directly onto your desktop, inspired by modern, minimal UI design.
 
-- GNOME Shell 45, 46, 47, 48 or 49
-- TypeScript 5.3+
-- Node.js 18+ (for development)
+* **Real-time Monitoring**: High-precision tracking for CPU, RAM, Storage, Temperature, and GPU.
+* **Elegant Ring Design**: Circular progress rings with centered SVG icons that adapt to your theme.
+* **Floating Workspace**: Position the widget anywhere on your screen using precise percentage-based coordinates.
+* **Deep Customization**:
+    * **Colors**: Individual ring colors, background, and borders.
+    * **Layout**: Adjustable circle diameter, ring thickness, and spacing.
+    * **Visibility**: Toggle labels and icons to match your aesthetic.
+* **GPU Support**: Native support for both NVIDIA (`nvidia-smi`) and AMD (`radeontop`).
 
-### Optional for GPU monitoring:
-- `nvidia-smi` for NVIDIA GPUs
-- `radeontop` for AMD GPUs
+---
 
-## Installation
+## 🛠 Installation
+
+### Prerequisites
+| Requirement | Version |
+| :--- | :--- |
+| **GNOME Shell** | 45, 46, 47, 48, or 49 |
+| **Node.js** | 18+ |
+| **TypeScript** | 5.3+ |
 
 ### From Source
-
-1. Clone the repository:
 ```bash
-git clone https://github.com/ctrln3rd/vitals-widget.git
+# 1. Clone the repository
+git clone [https://github.com/ctrln3rd/vitals-widget.git](https://github.com/ctrln3rd/vitals-widget.git)
 cd vitals-widget
-```
 
-2. Install dependencies:
-```bash
+# 2. Install dev dependencies
 npm install
-```
 
-3. Build and install:
-```bash
+# 3. Build and install to local extensions folder
 make install
-```
 
-4. Enable the extension:
-```bash
+# 4. Enable the extension
 gnome-extensions enable vitalswidget@ctrln3rd.github.com
-```
-
-5. Restart GNOME Shell:
-- X11: Press `Alt+F2`, type `r`, press Enter
-- Wayland: Log out and log back in
-
-
-### Available Make Commands
-
-```bash
-make install       # Compile and install extension
-make nested        # Launch nested GNOME Shell for testing
-make test          # Run tests with GJS
-make logs          # View extension logs
-make clean         # Clean build artifacts
-make remove        # Uninstall extension
-make dev           # Clean, rebuild, and launch nested shell
-```
-
-### Testing in Nested Shell
-
-For safer development without affecting your main session:
-
-```bash
-make nested
-```
-
-This launches a nested Wayland session where you can test changes.
-
-### Watching for Changes
-
-During development, keep TypeScript compiler running:
-
-```bash
-npm run watch
-```
-
-Then use `make install` to deploy changes.
-
-### Running Tests
-
-```bash
-# Run all tests
-make test
-
-# Run specific test
-make test FILE=tests/sensor_test.js
-```
-
-## Configuration
-
-Access settings via:
-- GNOME Extensions app → VitalsWidget → Settings
-- Command line: `gnome-extensions prefs vitalswidget@ctrln3rd.github.com`
-
-
-### Custom Icons 
-- In the ./src/icons.ts change the desired svg with currentColor to allow color changing
-
-## Troubleshooting
-
-### Extension not showing
-
-1. Check if enabled:
-```bash
-gnome-extensions list --enabled | grep vitalswidget
-```
-
-2. View logs:
-```bash
-make logs
-```
-
-3. Check for TypeScript errors:
-```bash
-npm run compile
-```
-
-### GPU stats not showing
-
-- Install `nvidia-smi` (NVIDIA) or `radeontop` (AMD)
-- Verify command availability: `which nvidia-smi`
-
-### Temperature not reading
-
-The extension searches for thermal zones automatically. If not working:
-- Check `/sys/class/thermal/` for available zones
-- Verify permissions on thermal files
-
-## Contributing
-
-Contributions are welcome! Please:
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes with clear commit messages
-4. Test thoroughly using `make nested`
-5. Submit a pull request
-
-### Code Style
-
-- Use TypeScript strict mode
-- Follow existing patterns for consistency
-- Add comments for complex logic
-- Run linter before submitting: `npm run lint`
-
-## License
-
-GPL-3.0 License - see LICENSE file for details
-
-## Credits
-
-Created by ctrln3rd
-
-Inspired by other GNOME Shell system monitor extensions.
-
-## Support
-
-- Report issues: [GitHub Issues](https://github.com/ctrln3rd/vitals-widget/issues)
-- Discussions: [GitHub Discussions](https://github.com/ctrln3rd/vitals-widget/discussions)
-
-## Changelog
-
-### v1.0.0
-- Initial release
-- Desktop widget (not panel-based)
-- Circular progress indicators with icons inside
-- Support for CPU, RAM, Storage, Temperature, GPU monitoring
-- Draggable widget with percentage-based positioning
-- Fully customizable appearance
-- Comprehensive settings UI
