@@ -18,7 +18,6 @@ class VitalItem extends St.BoxLayout {
     private _label: St.Label | null = null;
     private _handlerIds: number[] = [];
     private _currentValue: number = 0;
-    private _isDestroyed: boolean = false;
 
     constructor(type: VitalType, settings: any) {
         super({
@@ -39,7 +38,6 @@ class VitalItem extends St.BoxLayout {
         const svgFunc = ICONS[this._type as keyof typeof ICONS];
         const svgString = svgFunc ? svgFunc(color) : '';
         
-        // Convert string to Uint8Array before creating GLib.Bytes
         const encoder = new TextEncoder();
         const data = encoder.encode(svgString);
         const bytes = new GLib.Bytes(data);
@@ -48,8 +46,6 @@ class VitalItem extends St.BoxLayout {
     }
 
     private _buildUI(): void {
-        if (this._isDestroyed) return;
-        
         this.vertical = this._settings.get_string('vital-orientation') === 'vertical';
         const container = new St.Widget({
             layout_manager: new Clutter.BinLayout(),
@@ -90,34 +86,22 @@ class VitalItem extends St.BoxLayout {
     }
 
     private _connectSettings(): void {
-        if (this._isDestroyed) return;
-        
-        const keys = [
-            'show-icons', 'show-labels', 'ring-diameter', 'vital-orientation'
-        ];
+        const keys = ['show-icons', 'show-labels', 'ring-diameter', 'vital-orientation'];
         keys.forEach(key => {
             this._handlerIds.push(this._settings.connect(`changed::${key}`, () => {
-                if (!this._isDestroyed) {
-                    this._rebuildUI();
-                }
+                this._rebuildUI();
             }));
         });
 
         const styleKeys = [`${this._type}-color`, 'icon-color', 'inactive-ring-color', 'label-font-size'];
         styleKeys.forEach(key => {
             this._handlerIds.push(this._settings.connect(`changed::${key}`, () => {
-                if (!this._isDestroyed) {
-                    this._updateStyle();
-                }
+                this._updateStyle();
             }));
         });
     }
 
     private _updateStyle(): void {
-        // Check for existence AND parentage AND destruction state
-        if (this._isDestroyed || !this._ringProgress || !this.get_parent()) return;
-        
-        const vitalColor = this._settings.get_string(`${this._type}-color`);
         const iconColor = this._settings.get_string('icon-color');
         
         if (this._icon) {
@@ -130,50 +114,42 @@ class VitalItem extends St.BoxLayout {
     }
 
     private _rebuildUI(): void {
-        if (this._isDestroyed || !this.get_parent()) return;
-        
         if (this._ringProgress) {
             this._ringProgress.destroy();
         }
         
         this.destroy_all_children();
 
-        // Explicitly nullify references to destroyed children
         this._label = null;
         this._icon = null;
         this._ringProgress = null;
 
         this._buildUI();
         
-        // Only update if we successfully rebuilt
         if (this._ringProgress) {
             this.update(this._currentValue);
         }
     }
 
     update(value: number): void {
-        if (this._isDestroyed) return;
-        
-        if (!this._ringProgress || !this.get_parent()) return;
-
         try {
-            this._currentValue = Math.min(100, Math.max(0, value));
+            // Fix: Handle NaN, null, undefined values properly
+            const safeValue = (typeof value === 'number' && !isNaN(value)) ? value : 0;
+            this._currentValue = Math.min(100, Math.max(0, safeValue));
             
-            this._ringProgress.setValue(this._currentValue);
+            if (this._ringProgress) {
+                this._ringProgress.setValue(this._currentValue);
+            }
             
             if (this._label) {
                 this._label.set_text(`${Math.round(this._currentValue)}%`);
             }
         } catch (e) {
-            if (!this._isDestroyed) {
-                console.debug(`[VitalsWidget] Update suppressed: ${e}`);
-            }
+            console.debug(`[VitalsWidget] Update error: ${e}`);
         }
     }
 
     destroy(): void {
-        this._isDestroyed = true;
-        
         this._handlerIds.forEach(id => this._settings.disconnect(id));
         this._handlerIds = [];
         

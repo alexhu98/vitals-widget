@@ -1,9 +1,12 @@
 {
   "uuid": "vitalsWidget@ctrln3rd.github.com",
   "name": "vitals widget",
-  "description": "view cpu usage, ram , gpu , tempearature anywhere on your desktop",
+  "description": "view cpu usage, ram , gpu and temperature anywhere on your desktop",
   "shell-version": ["45", "46", "47", "48", "49"],
   "url": "https://github.com/ctrln3rd/vitals-widget",
-  "version" : 1,
-  "settings-schema": "org.gnome.shell.extensions.vitalswidget"
+  "version" : 2,
+  "settings-schema": "org.gnome.shell.extensions.vitalswidget",
+  "donations": {
+    "kofi": "ctrln3rd"
+  }
 }

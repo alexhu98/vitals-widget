@@ -1,7 +1,3 @@
-/**
- * Preferences - Settings UI for VitalsWidget Desktop Widget
- */
-
 import Adw from 'gi://Adw';
 import Gtk from 'gi://Gtk';
 import Gdk from 'gi://Gdk';
@@ -10,7 +6,6 @@ import { ExtensionPreferences } from 'resource:///org/gnome/Shell/Extensions/js/
 import { VitalType, getVitalDisplayName } from './config.js';
 
 export default class VitalsWidgetPreferences extends ExtensionPreferences {
-    //Fill preferences window with settings
     async fillPreferencesWindow(window: Adw.PreferencesWindow): Promise<void> {
         const settings = this.getSettings();
 
@@ -38,7 +33,7 @@ export default class VitalsWidgetPreferences extends ExtensionPreferences {
         });
         generalPage.add(layoutGroup);
 
-        // FIX: Manual binding for Layout Orientation ComboRow
+        // orientation row
         const orientationRow = new Adw.ComboRow({
             title: 'Layout Orientation',
             model: new Gtk.StringList({ strings: ['Horizontal', 'Vertical'] }),
@@ -75,7 +70,7 @@ export default class VitalsWidgetPreferences extends ExtensionPreferences {
         this._addColorRow(layoutGroup, settings, 'background-color', 'Background Color');
         this._addColorRow(layoutGroup, settings, 'border-color', 'Border Color');
 
-        // FIX: Manual binding for Vital Content Orientation ComboRow
+        // vitals Orientation row
         const vitalOrientRow = new Adw.ComboRow({
             title: 'Vital Content Orientation',
             subtitle: 'Stacking of icon and label inside each vital',

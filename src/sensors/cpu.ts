@@ -1,5 +1,3 @@
-// CPUSensor - CPU utilization monitoring
-
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 
@@ -8,50 +6,35 @@ export class CPUSensor {
     private _lastIdle: number = 0;
 
     constructor() {
-        // Initialize with first reading
         this._updateStats();
     }
 
-    //  Get current CPU utilization (0-100)
-    getValue(): number {
-        return this._updateStats();
+    async getValue(): Promise<number> {
+        return await this._updateStats();
     }
 
-    // Read and calculate CPU usage from /proc/stat
-    private _updateStats(): number {
+    private async _updateStats(): Promise<number> {
         try {
             const file = Gio.File.new_for_path('/proc/stat');
-            const [success, contents] = file.load_contents(null);
-            
-            if (!success || !contents) {
-                return 0;
-            }
-
-            const data = new TextDecoder().decode(contents);
+            const [contents] = await file.load_contents_async(null);
+            if (!contents) return 0;
+            const data = new TextDecoder().decode(contents as unknown as Uint8Array);
             const lines = data.split('\n');
-            
-            // First line contains aggregate CPU stats
             const cpuLine = lines[0];
-            if (!cpuLine.startsWith('cpu ')) {
-                return 0;
-            }
 
-            // Parse CPU times
+            if (!cpuLine.startsWith('cpu ')) return 0;
+
             const times = cpuLine
                 .split(/\s+/)
                 .slice(1)
                 .map(x => parseInt(x))
                 .filter(x => !isNaN(x));
 
-            if (times.length < 4) {
-                return 0;
-            }
+            if (times.length < 4) return 0;
 
-            // Calculate total and idle time
-            const idle = times[3]; // idle time
+            const idle = times[3];
             const total = times.reduce((acc, val) => acc + val, 0);
 
-            // Calculate usage percentage
             const totalDelta = total - this._lastTotal;
             const idleDelta = idle - this._lastIdle;
 
@@ -60,19 +43,12 @@ export class CPUSensor {
                 usage = ((totalDelta - idleDelta) / totalDelta) * 100;
             }
 
-            // Store for next calculation
             this._lastTotal = total;
             this._lastIdle = idle;
 
             return Math.max(0, Math.min(100, usage));
         } catch (e) {
-            logError(e as Error, 'CPUSensor');
             return 0;
         }
-    }
-    
-    //Cleanup
-    destroy(): void {
-        // No cleanup needed
     }
 }

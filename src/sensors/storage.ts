@@ -1,52 +1,24 @@
-// StorageSensor - Disk usage monitoring
- 
-
-import GLib from 'gi://GLib';
-import Gio from 'gi://Gio';
+import Gio from "gi://Gio";
 
 export class StorageSensor {
-    constructor() {}
+  async getValue(): Promise<number> {
+    try {
+      // Async subprocess for df command
+      const proc = Gio.Subprocess.new(
+        ["df", "/"],
+        Gio.SubprocessFlags.STDOUT_PIPE
+      );
+      const [stdout] = await proc.communicate_utf8_async(null, null);
 
-    //Get current storage utilization (0-100
-     getValue(): number {
-        try {
-            // Execute df command for root filesystem
-            const [success, stdout] = GLib.spawn_command_line_sync('df -h /');
-            
-            if (!success || !stdout) {
-                return 0;
-            }
+      if (!stdout) return 0;
+      const lines = stdout.split("\n");
+      if (lines.length < 2) return 0;
 
-            const output = new TextDecoder().decode(stdout);
-            const lines = output.split('\n');
-
-            // Skip header line, get data line
-            if (lines.length < 2) {
-                return 0;
-            }
-
-            const dataLine = lines[1];
-            const columns = dataLine.split(/\s+/);
-
-            // Column 4 typically contains the usage percentage (e.g., "45%")
-            if (columns.length >= 5) {
-                const usageStr = columns[4];
-                const match = usageStr.match(/(\d+)%/);
-                
-                if (match) {
-                    return parseInt(match[1]);
-                }
-            }
-
-            return 0;
-        } catch (e) {
-            logError(e as Error, 'StorageSensor');
-            return 0;
-        }
+      const columns = lines[1].split(/\s+/);
+      const usageStr = columns.find((c) => c.includes("%"));
+      return usageStr ? parseInt(usageStr) : 0;
+    } catch (e) {
+      return 0;
     }
-
-    //Cleanup
-    destroy(): void {
-        // No cleanup needed
-    }
+  }
 }

@@ -1,5 +1,3 @@
-//TempSensor - CPU temperature monitoring
-
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 
@@ -12,45 +10,65 @@ export class TempSensor {
         this._findThermalZones();
     }
 
-    // Find available thermal zones
-    private _findThermalZones(): void {
+    private async _findThermalZones(): Promise<void> {
         const basePath = '/sys/class/thermal';
         this._thermalPaths = [];
         
         try {
             const dir = Gio.File.new_for_path(basePath);
             
-            // Check if directory exists before enumerating
+            // Check if directory exists
             if (!dir.query_exists(null)) {
                 console.warn('TempSensor: Thermal directory not found');
                 return;
             }
 
-            const enumerator = dir.enumerate_children(
-                'standard::name',
-                Gio.FileQueryInfoFlags.NONE,
-                null
-            );
+            // Enumerate children asynchronously
+            const enumerator = await new Promise<Gio.FileEnumerator>((resolve, reject) => {
+                dir.enumerate_children_async(
+                    'standard::name',
+                    Gio.FileQueryInfoFlags.NONE,
+                    GLib.PRIORITY_LOW,
+                    null,
+                    (obj, res) => {
+                        try {
+                            resolve(dir.enumerate_children_finish(res));
+                        } catch (e) {
+                            reject(e);
+                        }
+                    }
+                );
+            });
 
-            let fileInfo;
-            while ((fileInfo = enumerator.next_file(null)) !== null) {
+            while (true) {
+                // Get next file asynchronously
+                const files = await new Promise<Gio.FileInfo[]>((resolve, reject) => {
+                    enumerator.next_files_async(1, GLib.PRIORITY_LOW, null, (obj, res) => {
+                        try {
+                            resolve(enumerator.next_files_finish(res));
+                        } catch (e) {
+                            reject(e);
+                        }
+                    });
+                });
+
+                if (files.length === 0) break;
+
+                const fileInfo = files[0];
                 const name = fileInfo.get_name();
                 
-                // Look for thermal zones
                 if (name.startsWith('thermal_zone')) {
                     const typePath = `${basePath}/${name}/type`;
                     const tempPath = `${basePath}/${name}/temp`;
                     
-                    // Check if this is a CPU-related zone
                     try {
                         const typeFile = Gio.File.new_for_path(typePath);
-                        const [success, contents] = typeFile.load_contents(null);
+                        const [contents] = await typeFile.load_contents_async(null);
                         
-                        if (success && contents) {
-                            const type = new TextDecoder().decode(contents).trim().toLowerCase();
+                        if (contents) {
+                            const type = new TextDecoder().decode(contents as unknown as Uint8Array).trim().toLowerCase();
                             
-                            // Improved filter: Look for CPU/processor/core related thermal zones
-                            // Added k10temp, tctl, tdie for AMD support
+                            // Look for CPU/AMD/Core related zones
                             if (type.includes('cpu') || 
                                 type.includes('processor') || 
                                 type.includes('x86_pkg_temp') ||
@@ -62,21 +80,21 @@ export class TempSensor {
                             }
                         }
                     } catch (e) {
-                        // Skip this zone
+                        // Skip zone on error
                     }
                 }
             }
 
-            enumerator.close(null);
+            enumerator.close_async(GLib.PRIORITY_LOW, null, null);
         } catch (e) {
             console.warn(`TempSensor error finding zones: ${e}`);
         }
 
-        // Fallback to common paths if none found
+        // Fallback to common paths if none found via enumeration
         if (this._thermalPaths.length === 0) {
             const commonPaths = [
                 '/sys/class/thermal/thermal_zone0/temp',
-                '/sys/class/hwmon/hwmon0/temp1_input', // Often CPU on some systems
+                '/sys/class/hwmon/hwmon0/temp1_input',
                 '/sys/class/hwmon/hwmon1/temp1_input',
                 '/sys/class/hwmon/hwmon2/temp1_input',
                 '/sys/class/hwmon/hwmon0/device/temp1_input'
@@ -92,44 +110,46 @@ export class TempSensor {
         console.log(`TempSensor: Found ${this._thermalPaths.length} thermal zones: ${this._thermalPaths.join(', ')}`);
     }
 
-    //Get current temperature as percentage (0-100)
-    // Calculates the AVERAGE temperature of all detected sensors.
-    getValue(): number {
+    //Get current temperature as percentage (0-100) asynchronously
+    async getValue(): Promise<number> {
         let totalTemp = 0;
         let count = 0;
 
-        // Try each thermal path
-        for (const path of this._thermalPaths) {
+        // Iterate through paths using async loading
+        const readPromises = this._thermalPaths.map(async (path) => {
             try {
                 const file = Gio.File.new_for_path(path);
-                const [success, contents] = file.load_contents(null);
+                const [contents] = await file.load_contents_async(null);
                 
-                if (!success || !contents) {
-                    continue;
-                }
+                if (contents) {
+                    const data = new TextDecoder().decode(contents as unknown as Uint8Array).trim();
+                    const tempMillidegrees = parseInt(data);
 
-                const data = new TextDecoder().decode(contents).trim();
-                const tempMillidegrees = parseInt(data);
-
-                if (!isNaN(tempMillidegrees)) {
-                    const tempCelsius = tempMillidegrees / 1000;
-                    
-                    // Sanity check: Discard implausible values (0, -273, or 1000+)
-                    // A running CPU should generally be between 5°C and 150°C
-                    if (tempCelsius > 5 && tempCelsius < 150) {
-                        totalTemp += tempCelsius;
-                        count++;
+                    if (!isNaN(tempMillidegrees)) {
+                        const tempCelsius = tempMillidegrees / 1000;
+                        
+                        // Sanity check: 5°C to 150°C
+                        if (tempCelsius > 5 && tempCelsius < 150) {
+                            return tempCelsius;
+                        }
                     }
                 }
             } catch (e) {
-                // Try next path
+                // Ignore errors for individual files
+            }
+            return null;
+        });
+
+        const results = await Promise.all(readPromises);
+
+        for (const temp of results) {
+            if (temp !== null) {
+                totalTemp += temp;
+                count++;
             }
         }
 
-        // Return 0 if no valid sensors read
-        if (count === 0) {
-            return 0;
-        }
+        if (count === 0) return 0;
 
         const avgTemp = totalTemp / count;
 
@@ -138,8 +158,4 @@ export class TempSensor {
         return Math.max(0, Math.min(100, percentage));
     }
 
-    //Cleanup
-    destroy(): void {
-        // No cleanup needed
-    }
 }
