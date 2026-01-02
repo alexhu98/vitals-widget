@@ -1,5 +1,5 @@
 {
-  "uuid": "vitalsWidget@ctrln3rd.github.com",
+  "uuid": "vitalswidget@ctrln3rd.github.com",
   "name": "vitals widget",
   "description": "view cpu usage, ram , gpu and temperature anywhere on your desktop",
   "shell-version": ["45", "46", "47", "48", "49"],
